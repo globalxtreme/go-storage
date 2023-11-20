@@ -1,4 +1,4 @@
-package go_storage
+package gxstorage
 
 import (
 	"context"
