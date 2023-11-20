@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package Storage;
+
+option go_package = "RPC/gRPC/Storage";
+
+service PublicStorage {
+  rpc Store(stream PublicStorageStoreRequest) returns (PublicStorageResponse) {}
+  rpc Delete(PublicStorageDeleteRequest) returns (PublicStorageResponse) {}
+}
+
+message PublicStorageCredential {
+  string clientID = 1;
+  string clientSecret = 2;
+}
+
+message PublicStorageStoreRequest {
+  bytes content = 1;
+  string path = 2;
+  string filename = 3;
+  string title = 4;
+  PublicStorageCredential credential = 5;
+}
+
+message PublicStorageDeleteRequest {
+  string path = 1;
+  PublicStorageCredential credential = 2;
+}
+
+message PublicStorageResponse {
+  string message = 1;
+  PublicStorageResult result = 2;
+}
+
+message PublicStorageResult {
+  string path = 1;
+  string fullPath = 2;
+}
