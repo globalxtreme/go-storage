@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/globalxtreme/go-storage/RPC/gRPC/Storage"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	"io"
 	"log"
 	"math/rand"
@@ -15,12 +16,11 @@ import (
 	"time"
 )
 
-type PublicStorageClient struct {
-	gRPCClient
-	credential Storage.PublicStorageCredential
-
-	PublicStorage Storage.PublicStorageClient
-}
+var (
+	PublicStorageRPCClient     Storage.PublicStorageClient
+	PublicStorageRPCCredential Storage.PublicStorageCredential
+	PublicStorageRPCActive     bool
+)
 
 type PublicStorageUpload struct {
 	File  multipart.File
@@ -36,7 +36,7 @@ type PublicStorageMove struct {
 	Title string
 }
 
-func NewPublicStorageClient(timeout ...time.Duration) (*PublicStorageClient, context.CancelFunc) {
+func InitPublicStorageRPC() func() {
 	clientId := os.Getenv("PUBLIC_STORAGE_CLIENT_ID")
 	clientSecret := os.Getenv("PUBLIC_STORAGE_CLIENT_SECRET")
 	address := os.Getenv("PUBLIC_STORAGE_HOST")
@@ -45,26 +45,49 @@ func NewPublicStorageClient(timeout ...time.Duration) (*PublicStorageClient, con
 		log.Panicf("Please setup your public storage Client ID and Screct and Host!")
 	}
 
-	client := PublicStorageClient{}
-	cleanup := client.RPCDialClient(address, timeout...)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	client.PublicStorage = Storage.NewPublicStorageClient(client.Conn)
-	client.credential = Storage.PublicStorageCredential{
+	keepaliveParam := keepalive.ClientParameters{
+		Time:                10 * time.Second,
+		Timeout:             20 * time.Second,
+		PermitWithoutStream: true,
+	}
+
+	conn, err := grpc.DialContext(ctx, address,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+		grpc.WithKeepaliveParams(keepaliveParam),
+	)
+	if err != nil {
+		log.Panicf("Did not connect to %s: %v", address, err)
+	}
+
+	PublicStorageRPCClient = Storage.NewPublicStorageClient(conn)
+	PublicStorageRPCCredential = Storage.PublicStorageCredential{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
 	}
+	PublicStorageRPCActive = true
 
-	return &client, cleanup
+	cleanup := func() {
+		cancel()
+		conn.Close()
+	}
+
+	return cleanup
 }
 
-func (rpc *PublicStorageClient) UploadFile(store PublicStorageUpload) (*Storage.PublicStorageResponse, error) {
+func UploadFile(store PublicStorageUpload) (*Storage.PublicStorageResponse, error) {
 	if len(store.Name) == 0 {
 		return nil, errors.New("Please enter your filename [Name]")
 	}
 
 	filename := generateRandomName() + filepath.Ext(store.Name)
 
-	stream, err := rpc.PublicStorage.Store(rpc.Ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	stream, err := PublicStorageRPCClient.Store(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +112,7 @@ func (rpc *PublicStorageClient) UploadFile(store PublicStorageUpload) (*Storage.
 			Path:       store.Path,
 			Filename:   filename,
 			Title:      store.Title,
-			Credential: &rpc.credential,
+			Credential: &PublicStorageRPCCredential,
 		}
 
 		if err := stream.Send(&req); err != nil {
@@ -98,7 +121,7 @@ func (rpc *PublicStorageClient) UploadFile(store PublicStorageUpload) (*Storage.
 	}
 }
 
-func (rpc *PublicStorageClient) MoveFile(store PublicStorageMove) (*Storage.PublicStorageResponse, error) {
+func MoveFile(store PublicStorageMove) (*Storage.PublicStorageResponse, error) {
 	var filename string
 	if len(store.Name) == 0 {
 		filename = generateRandomName() + filepath.Ext(store.File)
@@ -111,7 +134,10 @@ func (rpc *PublicStorageClient) MoveFile(store PublicStorageMove) (*Storage.Publ
 		return nil, err
 	}
 
-	stream, err := rpc.PublicStorage.Store(rpc.Ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	stream, err := PublicStorageRPCClient.Store(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +162,7 @@ func (rpc *PublicStorageClient) MoveFile(store PublicStorageMove) (*Storage.Publ
 			Path:       store.Path,
 			Filename:   filename,
 			Title:      store.Title,
-			Credential: &rpc.credential,
+			Credential: &PublicStorageRPCCredential,
 		}
 
 		if err := stream.Send(&req); err != nil {
@@ -145,47 +171,19 @@ func (rpc *PublicStorageClient) MoveFile(store PublicStorageMove) (*Storage.Publ
 	}
 }
 
-func (rpc *PublicStorageClient) Delete(path string) (*Storage.PublicStorageResponse, error) {
-	res, err := rpc.PublicStorage.Delete(rpc.Ctx, &Storage.PublicStorageDeleteRequest{
+func Delete(path string) (*Storage.PublicStorageResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := PublicStorageRPCClient.Delete(ctx, &Storage.PublicStorageDeleteRequest{
 		Path:       path,
-		Credential: &rpc.credential,
+		Credential: &PublicStorageRPCCredential,
 	})
 	if err != nil {
 		log.Panicf("Delete file invalid: %v", err)
 	}
 
 	return res, nil
-}
-
-type gRPCClient struct {
-	Ctx    context.Context
-	Conn   *grpc.ClientConn
-	Cancel context.CancelFunc
-}
-
-func (client *gRPCClient) RPCDialClient(host string, timeout ...time.Duration) context.CancelFunc {
-	dialTimeout := 5 * time.Second
-	if len(timeout) > 0 {
-		dialTimeout = timeout[0]
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
-
-	conn, err := grpc.DialContext(ctx, host, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Panicf("Did not connect to %s: %v", host, err)
-	}
-
-	client.Ctx = ctx
-	client.Conn = conn
-	client.Cancel = cancel
-
-	cleanup := func() {
-		client.Cancel()
-		client.Conn.Close()
-	}
-
-	return cleanup
 }
 
 func generateRandomName() string {
