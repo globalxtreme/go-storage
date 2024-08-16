@@ -19,8 +19,15 @@ import (
 var (
 	PublicStorageRPCClient     Storage.PublicStorageClient
 	PublicStorageRPCCredential Storage.PublicStorageCredential
+	PublicStorageRPCConf       publicStorageConf
 	PublicStorageRPCActive     bool
 )
+
+type publicStorageConf struct {
+	Timeout          time.Duration
+	KeepalivePing    time.Duration
+	KeepaliveTimeout time.Duration
+}
 
 type PublicStorageUpload struct {
 	File  multipart.File
@@ -41,15 +48,41 @@ func InitPublicStorageRPC() func() {
 	clientSecret := os.Getenv("PUBLIC_STORAGE_CLIENT_SECRET")
 	address := os.Getenv("PUBLIC_STORAGE_HOST")
 
+	toInt := func(val string) int64 {
+		parseVal, _ := strconv.Atoi(val)
+		return int64(parseVal)
+	}
+
+	var timeout time.Duration
+	if timeoutENV := os.Getenv("PUBLIC_STORAGE_TIMEOUT"); timeoutENV != "" {
+		timeout = time.Duration(toInt(timeoutENV)) * time.Second
+	} else {
+		timeout = 5 * time.Second
+	}
+
+	var keepalivePing time.Duration
+	if keepalivePingENV := os.Getenv("PUBLIC_STORAGE_KEEPALIVE_PING"); keepalivePingENV != "" {
+		keepalivePing = time.Duration(toInt(keepalivePingENV)) * time.Second
+	} else {
+		keepalivePing = 60 * time.Second
+	}
+
+	var keepaliveTimeout time.Duration
+	if keepaliveTimeoutENV := os.Getenv("PUBLIC_STORAGE_KEEPALIVE_TIMEOUT"); keepaliveTimeoutENV != "" {
+		keepaliveTimeout = time.Duration(toInt(keepaliveTimeoutENV)) * time.Second
+	} else {
+		keepaliveTimeout = 20 * time.Second
+	}
+
 	if len(clientId) == 0 || len(clientSecret) == 0 || len(address) == 0 {
 		log.Panicf("Please setup your public storage Client ID and Screct and Host!")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
 	keepaliveParam := keepalive.ClientParameters{
-		Time:                10 * time.Second,
-		Timeout:             20 * time.Second,
+		Time:                keepalivePing,
+		Timeout:             keepaliveTimeout,
 		PermitWithoutStream: true,
 	}
 
@@ -66,6 +99,11 @@ func InitPublicStorageRPC() func() {
 	PublicStorageRPCCredential = Storage.PublicStorageCredential{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
+	}
+	PublicStorageRPCConf = publicStorageConf{
+		Timeout:          timeout,
+		KeepalivePing:    keepalivePing,
+		KeepaliveTimeout: keepaliveTimeout,
 	}
 	PublicStorageRPCActive = true
 
@@ -84,7 +122,7 @@ func UploadFile(store PublicStorageUpload) (*Storage.PublicStorageResponse, erro
 
 	filename := generateRandomName() + filepath.Ext(store.Name)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
 	defer cancel()
 
 	stream, err := PublicStorageRPCClient.Store(ctx)
@@ -134,7 +172,7 @@ func MoveFile(store PublicStorageMove) (*Storage.PublicStorageResponse, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
 	defer cancel()
 
 	stream, err := PublicStorageRPCClient.Store(ctx)
@@ -172,7 +210,7 @@ func MoveFile(store PublicStorageMove) (*Storage.PublicStorageResponse, error) {
 }
 
 func Delete(path string) (*Storage.PublicStorageResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
 	defer cancel()
 
 	res, err := PublicStorageRPCClient.Delete(ctx, &Storage.PublicStorageDeleteRequest{
