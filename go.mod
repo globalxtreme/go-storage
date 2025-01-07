@@ -1,4 +1,4 @@
-module github.com/globalxtreme/go-storage
+module github.com/globalxtreme/go-storage/v2
 
 go 1.22
 
