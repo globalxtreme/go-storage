@@ -3,7 +3,7 @@ package gxstorage
 import (
 	"context"
 	"errors"
-	"github.com/globalxtreme/go-storage/RPC/gRPC/Storage"
+	"github.com/globalxtreme/go-storage/grpc/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"io"
@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	PublicStorageRPCClient     Storage.PublicStorageClient
-	PublicStorageRPCCredential Storage.PublicStorageCredential
+	PublicStorageRPCClient     storage.PublicStorageClient
+	PublicStorageRPCCredential storage.PublicStorageCredential
 	PublicStorageRPCConf       publicStorageConf
 	PublicStorageRPCActive     bool
 )
@@ -95,8 +95,8 @@ func InitPublicStorageRPC() func() {
 		log.Panicf("Did not connect to %s: %v", address, err)
 	}
 
-	PublicStorageRPCClient = Storage.NewPublicStorageClient(conn)
-	PublicStorageRPCCredential = Storage.PublicStorageCredential{
+	PublicStorageRPCClient = storage.NewPublicStorageClient(conn)
+	PublicStorageRPCCredential = storage.PublicStorageCredential{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
 	}
@@ -115,7 +115,7 @@ func InitPublicStorageRPC() func() {
 	return cleanup
 }
 
-func UploadFile(store PublicStorageUpload) (*Storage.PublicStorageResponse, error) {
+func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, error) {
 	if len(store.Name) == 0 {
 		return nil, errors.New("Please enter your filename [Name]")
 	}
@@ -145,7 +145,7 @@ func UploadFile(store PublicStorageUpload) (*Storage.PublicStorageResponse, erro
 			return nil, err
 		}
 
-		req := Storage.PublicStorageStoreRequest{
+		req := storage.PublicStorageStoreRequest{
 			Content:    buf[:n],
 			Path:       store.Path,
 			Filename:   filename,
@@ -159,7 +159,7 @@ func UploadFile(store PublicStorageUpload) (*Storage.PublicStorageResponse, erro
 	}
 }
 
-func MoveFile(store PublicStorageMove) (*Storage.PublicStorageResponse, error) {
+func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 	var filename string
 	if len(store.Name) == 0 {
 		filename = generateRandomName() + filepath.Ext(store.File)
@@ -195,7 +195,7 @@ func MoveFile(store PublicStorageMove) (*Storage.PublicStorageResponse, error) {
 			return nil, err
 		}
 
-		req := Storage.PublicStorageStoreRequest{
+		req := storage.PublicStorageStoreRequest{
 			Content:    buf[:n],
 			Path:       store.Path,
 			Filename:   filename,
@@ -209,11 +209,11 @@ func MoveFile(store PublicStorageMove) (*Storage.PublicStorageResponse, error) {
 	}
 }
 
-func Delete(path string) (*Storage.PublicStorageResponse, error) {
+func Delete(path string) (*storage.PublicStorageResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
 	defer cancel()
 
-	res, err := PublicStorageRPCClient.Delete(ctx, &Storage.PublicStorageDeleteRequest{
+	res, err := PublicStorageRPCClient.Delete(ctx, &storage.PublicStorageDeleteRequest{
 		Path:       path,
 		Credential: &PublicStorageRPCCredential,
 	})

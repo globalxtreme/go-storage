@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package Storage;
+package storage;
 
-option go_package = "RPC/gRPC/Storage";
+option go_package = "grpc/storage";
 
 service PublicStorage {
   rpc Store(stream PublicStorageStoreRequest) returns (PublicStorageResponse) {}
