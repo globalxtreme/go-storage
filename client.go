@@ -3,7 +3,7 @@ package gxstorage
 import (
 	"context"
 	"errors"
-	"github.com/globalxtreme/go-storage/grpc/storage"
+	"github.com/globalxtreme/go-storage/v2/grpc/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"io"
