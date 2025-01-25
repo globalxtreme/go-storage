@@ -126,7 +126,7 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 	}
 
 	mimeType := GetMimeType(store.File, store.FileHandler, store.MimeType)
-	filename := generateRandomName() + filepath.Ext(store.Name)
+	filename := generateFilename(store.Name)
 
 	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
 	defer cancel()
@@ -152,12 +152,13 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 		}
 
 		req := storage.PublicStorageStoreRequest{
-			Content:    buf[:n],
-			Path:       store.Path,
-			Filename:   filename,
-			Title:      store.Title,
-			MimeType:   mimeType,
-			Credential: &PublicStorageRPCCredential,
+			Content:      buf[:n],
+			Path:         store.Path,
+			Filename:     filename,
+			OriginalName: store.Name,
+			Title:        store.Title,
+			MimeType:     mimeType,
+			Credential:   &PublicStorageRPCCredential,
 		}
 
 		if err := stream.Send(&req); err != nil {
@@ -167,12 +168,8 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 }
 
 func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
-	var filename string
-	if len(store.Name) == 0 {
-		filename = generateRandomName() + filepath.Ext(store.File)
-	} else {
-		filename = store.Name
-	}
+	mimeType := GetMimeTypeByPath(store.File, store.MimeType)
+	filename := generateFilename(store.Name)
 
 	file, err := os.Open(store.File)
 	if err != nil {
@@ -203,12 +200,13 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 		}
 
 		req := storage.PublicStorageStoreRequest{
-			Content:    buf[:n],
-			Path:       store.Path,
-			Filename:   filename,
-			Title:      store.Title,
-			MimeType:   GetMimeTypeByPath(store.File, store.MimeType),
-			Credential: &PublicStorageRPCCredential,
+			Content:      buf[:n],
+			Path:         store.Path,
+			Filename:     filename,
+			OriginalName: store.Name,
+			Title:        store.Title,
+			MimeType:     mimeType,
+			Credential:   &PublicStorageRPCCredential,
 		}
 
 		if err := stream.Send(&req); err != nil {
@@ -298,13 +296,13 @@ func GetMimeTypeByPath(path string, mimeType *string) string {
 	return *mimeType
 }
 
-func generateRandomName() string {
-	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+func generateFilename(filename string) string {
+	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
 
-	randomBytes := make([]byte, 20)
-	for i := 0; i < 20; i++ {
+	randomBytes := make([]byte, 36)
+	for i := 0; i < 36; i++ {
 		randomBytes[i] = chars[rand.Intn(len(chars))]
 	}
 
-	return string(randomBytes) + strconv.FormatInt(time.Now().UnixNano(), 10)
+	return string(randomBytes) + strconv.FormatInt(time.Now().UnixNano(), 10) + filepath.Ext(filename)
 }
