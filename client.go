@@ -207,7 +207,7 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 			Path:       store.Path,
 			Filename:   filename,
 			Title:      store.Title,
-			MimeType:   GetMimeTypeByPath(store.Path, store.MimeType),
+			MimeType:   GetMimeTypeByPath(store.File, store.MimeType),
 			Credential: &PublicStorageRPCCredential,
 		}
 
