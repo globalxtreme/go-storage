@@ -37,7 +37,7 @@ type PublicStorageUpload struct {
 	Path        string
 	Name        string
 	Title       string
-	MimeType    string
+	MimeType    *string
 }
 
 type PublicStorageMove struct {
@@ -45,7 +45,7 @@ type PublicStorageMove struct {
 	Path     string
 	Name     string
 	Title    string
-	MimeType string
+	MimeType *string
 }
 
 func InitPublicStorageRPC() func() {
@@ -125,6 +125,7 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 		return nil, errors.New("Please enter your filename [Name]")
 	}
 
+	mimeType := GetMimeType(store.File, store.FileHandler, store.MimeType)
 	filename := generateRandomName() + filepath.Ext(store.Name)
 
 	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
@@ -155,7 +156,7 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 			Path:       store.Path,
 			Filename:   filename,
 			Title:      store.Title,
-			MimeType:   store.MimeType,
+			MimeType:   mimeType,
 			Credential: &PublicStorageRPCCredential,
 		}
 
@@ -206,7 +207,7 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 			Path:       store.Path,
 			Filename:   filename,
 			Title:      store.Title,
-			MimeType:   store.MimeType,
+			MimeType:   GetMimeTypeByPath(store.Path, store.MimeType),
 			Credential: &PublicStorageRPCCredential,
 		}
 
