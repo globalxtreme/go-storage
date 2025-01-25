@@ -19,7 +19,8 @@ message PublicStorageStoreRequest {
   string path = 2;
   string filename = 3;
   string title = 4;
-  PublicStorageCredential credential = 5;
+  string mimeType = 5;
+  PublicStorageCredential credential = 6;
 }
 
 message PublicStorageDeleteRequest {

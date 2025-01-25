@@ -10,9 +10,11 @@ import (
 	"log"
 	"math/rand"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -30,17 +32,20 @@ type publicStorageConf struct {
 }
 
 type PublicStorageUpload struct {
-	File  multipart.File
-	Path  string
-	Name  string
-	Title string
+	File        multipart.File
+	FileHandler *multipart.FileHeader
+	Path        string
+	Name        string
+	Title       string
+	MimeType    string
 }
 
 type PublicStorageMove struct {
-	File  string
-	Path  string
-	Name  string
-	Title string
+	File     string
+	Path     string
+	Name     string
+	Title    string
+	MimeType string
 }
 
 func InitPublicStorageRPC() func() {
@@ -150,6 +155,7 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 			Path:       store.Path,
 			Filename:   filename,
 			Title:      store.Title,
+			MimeType:   store.MimeType,
 			Credential: &PublicStorageRPCCredential,
 		}
 
@@ -200,6 +206,7 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 			Path:       store.Path,
 			Filename:   filename,
 			Title:      store.Title,
+			MimeType:   store.MimeType,
 			Credential: &PublicStorageRPCCredential,
 		}
 
@@ -222,6 +229,72 @@ func Delete(path string) (*storage.PublicStorageResponse, error) {
 	}
 
 	return res, nil
+}
+
+func GetMimeType(file multipart.File, handler *multipart.FileHeader, mimeType *string) string {
+	if mimeType == nil || *mimeType == "" {
+		buf := make([]byte, 512)
+		n, err := file.Read(buf)
+		if err != nil && err != io.EOF {
+			log.Panicf("Unable to reading file: %v", err)
+		}
+
+		mimeTypeSystem := http.DetectContentType(buf[:n])
+		if mimeTypeSystem == "application/zip" {
+			ext := strings.ToLower(filepath.Ext(handler.Filename))
+			switch ext {
+			case ".xlsx":
+				return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+			case ".docx":
+				return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+			}
+		}
+
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			log.Panicf("Unable to reset file pointer: %v", err)
+		}
+
+		return mimeTypeSystem
+	}
+
+	return *mimeType
+}
+
+func GetMimeTypeByPath(path string, mimeType *string) string {
+	if mimeType == nil || *mimeType == "" {
+		file, err := os.Open(path)
+		if err != nil {
+			log.Panicf("Unable to open file: %v", err)
+		}
+		defer file.Close()
+
+		buf := make([]byte, 512)
+		n, err := file.Read(buf)
+		if err != nil && err != io.EOF {
+			log.Panicf("Unable to reading file: %v", err)
+		}
+
+		mimeTypeSystem := http.DetectContentType(buf[:n])
+		if mimeTypeSystem == "application/zip" {
+			ext := strings.ToLower(filepath.Ext(path))
+			switch ext {
+			case ".xlsx":
+				return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+			case ".docx":
+				return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+			}
+		}
+
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			log.Panicf("Unable to reset file pointer: %v", err)
+		}
+
+		return mimeTypeSystem
+	}
+
+	return *mimeType
 }
 
 func generateRandomName() string {
