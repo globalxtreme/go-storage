@@ -21,7 +21,11 @@ message PublicStorageStoreRequest {
   string title = 4;
   string mimeType = 5;
   string originalName = 6;
-  PublicStorageCredential credential = 7;
+  string ownerId = 7;
+  string ownerType = 8;
+  string createdBy = 9;
+  string createdByName = 10;
+  PublicStorageCredential credential = 11;
 }
 
 message PublicStorageDeleteRequest {
