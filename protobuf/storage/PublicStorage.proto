@@ -4,6 +4,8 @@ package storage;
 
 option go_package = "grpc/storage";
 
+import "google/protobuf/duration.proto";
+
 service PublicStorage {
   rpc Store(stream PublicStorageStoreRequest) returns (PublicStorageResponse) {}
   rpc Delete(PublicStorageDeleteRequest) returns (PublicStorageResponse) {}
@@ -25,7 +27,8 @@ message PublicStorageStoreRequest {
   string ownerType = 8;
   string createdBy = 9;
   string createdByName = 10;
-  PublicStorageCredential credential = 11;
+  google.protobuf.Duration savedUntil = 11;
+  PublicStorageCredential credential = 12;
 }
 
 message PublicStorageDeleteRequest {

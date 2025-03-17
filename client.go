@@ -6,6 +6,7 @@ import (
 	"github.com/globalxtreme/go-storage/v2/grpc/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"io"
 	"log"
 	"math/rand"
@@ -42,6 +43,7 @@ type PublicStorageUpload struct {
 	OwnerType     string
 	CreatedBy     string
 	CreatedByName string
+	SavedUntil    time.Duration
 }
 
 type PublicStorageMove struct {
@@ -54,6 +56,7 @@ type PublicStorageMove struct {
 	OwnerType     string
 	CreatedBy     string
 	CreatedByName string
+	SavedUntil    time.Duration
 }
 
 func InitPublicStorageRPC() func() {
@@ -173,6 +176,10 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 			Credential:    &PublicStorageRPCCredential,
 		}
 
+		if store.SavedUntil > 0 {
+			req.SavedUntil = durationpb.New(store.SavedUntil)
+		}
+
 		if err := stream.Send(&req); err != nil {
 			return nil, err
 		}
@@ -223,6 +230,10 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 			CreatedBy:     store.CreatedBy,
 			CreatedByName: store.CreatedByName,
 			Credential:    &PublicStorageRPCCredential,
+		}
+
+		if store.SavedUntil > 0 {
+			req.SavedUntil = durationpb.New(store.SavedUntil)
 		}
 
 		if err := stream.Send(&req); err != nil {
