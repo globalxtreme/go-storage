@@ -59,6 +59,12 @@ type PublicStorageMove struct {
 	SavedUntil    time.Duration
 }
 
+type PublicStorageMoveCopyToService struct {
+	File       string
+	ToPath     string
+	ToClientID string
+}
+
 func InitPublicStorageRPC() func() {
 	clientId := os.Getenv("PUBLIC_STORAGE_CLIENT_ID")
 	clientSecret := os.Getenv("PUBLIC_STORAGE_CLIENT_SECRET")
@@ -240,6 +246,40 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 			return nil, err
 		}
 	}
+}
+
+func MoveToAnotherService(form PublicStorageMoveCopyToService) (*storage.PublicStorageResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
+	defer cancel()
+
+	res, err := PublicStorageRPCClient.MoveToAnotherService(ctx, &storage.PublicStorageMoveCopyRequest{
+		File:       form.File,
+		ToClientID: form.ToClientID,
+		ToPath:     form.ToPath,
+		Credential: &PublicStorageRPCCredential,
+	})
+	if err != nil {
+		log.Panicf("move file to another service invalid: %v", err)
+	}
+
+	return res, nil
+}
+
+func CopyToAnotherService(form PublicStorageMoveCopyToService) (*storage.PublicStorageResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
+	defer cancel()
+
+	res, err := PublicStorageRPCClient.CopyToAnotherService(ctx, &storage.PublicStorageMoveCopyRequest{
+		File:       form.File,
+		ToClientID: form.ToClientID,
+		ToPath:     form.ToPath,
+		Credential: &PublicStorageRPCCredential,
+	})
+	if err != nil {
+		log.Panicf("Copy file to another service invalid: %v", err)
+	}
+
+	return res, nil
 }
 
 func Delete(path string) (*storage.PublicStorageResponse, error) {

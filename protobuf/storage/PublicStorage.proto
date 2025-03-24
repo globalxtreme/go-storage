@@ -8,6 +8,8 @@ import "google/protobuf/duration.proto";
 
 service PublicStorage {
   rpc Store(stream PublicStorageStoreRequest) returns (PublicStorageResponse) {}
+  rpc CopyToAnotherService(PublicStorageMoveCopyRequest) returns (PublicStorageResponse) {}
+  rpc MoveToAnotherService(PublicStorageMoveCopyRequest) returns (PublicStorageResponse) {}
   rpc Delete(PublicStorageDeleteRequest) returns (PublicStorageResponse) {}
 }
 
@@ -34,6 +36,13 @@ message PublicStorageStoreRequest {
 message PublicStorageDeleteRequest {
   string path = 1;
   PublicStorageCredential credential = 2;
+}
+
+message PublicStorageMoveCopyRequest {
+  string file = 1;
+  string toClientID = 2;
+  string toPath = 3;
+  PublicStorageCredential credential = 4;
 }
 
 message PublicStorageResponse {
