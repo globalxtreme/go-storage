@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/globalxtreme/go-storage/RPC/gRPC/Storage"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"io"
@@ -225,12 +226,25 @@ func Delete(path string) (*Storage.PublicStorageResponse, error) {
 }
 
 func generateRandomName() string {
-	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	generateRandomString := func(length int) string {
+		chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
 
-	randomBytes := make([]byte, 20)
-	for i := 0; i < 20; i++ {
-		randomBytes[i] = chars[rand.Intn(len(chars))]
+		randomBytes := make([]byte, length)
+		for i := 0; i < length; i++ {
+			randomBytes[i] = chars[rand.Intn(len(chars))]
+		}
+
+		return string(randomBytes)
 	}
 
-	return string(randomBytes) + strconv.FormatInt(time.Now().UnixNano(), 10)
+	randomBytes := generateRandomString(20)
+
+	uuid7, err := uuid.NewV7()
+	if err != nil {
+		randomBytes += generateRandomString(50)
+	} else {
+		randomBytes += uuid7.String()
+	}
+
+	return randomBytes + strconv.FormatInt(time.Now().UnixNano(), 10)
 }
