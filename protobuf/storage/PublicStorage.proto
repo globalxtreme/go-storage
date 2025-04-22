@@ -30,7 +30,8 @@ message PublicStorageStoreRequest {
   string createdBy = 9;
   string createdByName = 10;
   google.protobuf.Duration savedUntil = 11;
-  PublicStorageCredential credential = 12;
+  bool WithWatermark = 12;
+  PublicStorageCredential credential = 13;
 }
 
 message PublicStorageDeleteRequest {

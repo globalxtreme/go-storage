@@ -44,6 +44,7 @@ type PublicStorageUpload struct {
 	CreatedBy     string
 	CreatedByName string
 	SavedUntil    time.Duration
+	WithWatermark bool
 }
 
 type PublicStorageMove struct {
@@ -57,6 +58,7 @@ type PublicStorageMove struct {
 	CreatedBy     string
 	CreatedByName string
 	SavedUntil    time.Duration
+	WithWatermark bool
 }
 
 type PublicStorageMoveCopyToService struct {
@@ -180,6 +182,7 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 			CreatedBy:     store.CreatedBy,
 			CreatedByName: store.CreatedByName,
 			Credential:    &PublicStorageRPCCredential,
+			WithWatermark: store.WithWatermark,
 		}
 
 		if store.SavedUntil > 0 {
@@ -236,6 +239,7 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 			CreatedBy:     store.CreatedBy,
 			CreatedByName: store.CreatedByName,
 			Credential:    &PublicStorageRPCCredential,
+			WithWatermark: store.WithWatermark,
 		}
 
 		if store.SavedUntil > 0 {
