@@ -25,6 +25,8 @@ type PublicStorageClient interface {
 	Store(ctx context.Context, opts ...grpc.CallOption) (PublicStorage_StoreClient, error)
 	CopyToAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
 	MoveToAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
+	CopyFromAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
+	MoveFromAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
 	Delete(ctx context.Context, in *PublicStorageDeleteRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
 }
 
@@ -88,6 +90,24 @@ func (c *publicStorageClient) MoveToAnotherService(ctx context.Context, in *Publ
 	return out, nil
 }
 
+func (c *publicStorageClient) CopyFromAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error) {
+	out := new(PublicStorageResponse)
+	err := c.cc.Invoke(ctx, "/storage.PublicStorage/CopyFromAnotherService", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *publicStorageClient) MoveFromAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error) {
+	out := new(PublicStorageResponse)
+	err := c.cc.Invoke(ctx, "/storage.PublicStorage/MoveFromAnotherService", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *publicStorageClient) Delete(ctx context.Context, in *PublicStorageDeleteRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error) {
 	out := new(PublicStorageResponse)
 	err := c.cc.Invoke(ctx, "/storage.PublicStorage/Delete", in, out, opts...)
@@ -104,6 +124,8 @@ type PublicStorageServer interface {
 	Store(PublicStorage_StoreServer) error
 	CopyToAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error)
 	MoveToAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error)
+	CopyFromAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error)
+	MoveFromAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error)
 	Delete(context.Context, *PublicStorageDeleteRequest) (*PublicStorageResponse, error)
 	mustEmbedUnimplementedPublicStorageServer()
 }
@@ -120,6 +142,12 @@ func (UnimplementedPublicStorageServer) CopyToAnotherService(context.Context, *P
 }
 func (UnimplementedPublicStorageServer) MoveToAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MoveToAnotherService not implemented")
+}
+func (UnimplementedPublicStorageServer) CopyFromAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CopyFromAnotherService not implemented")
+}
+func (UnimplementedPublicStorageServer) MoveFromAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MoveFromAnotherService not implemented")
 }
 func (UnimplementedPublicStorageServer) Delete(context.Context, *PublicStorageDeleteRequest) (*PublicStorageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -199,6 +227,42 @@ func _PublicStorage_MoveToAnotherService_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PublicStorage_CopyFromAnotherService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PublicStorageMoveCopyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicStorageServer).CopyFromAnotherService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/storage.PublicStorage/CopyFromAnotherService",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicStorageServer).CopyFromAnotherService(ctx, req.(*PublicStorageMoveCopyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PublicStorage_MoveFromAnotherService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PublicStorageMoveCopyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicStorageServer).MoveFromAnotherService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/storage.PublicStorage/MoveFromAnotherService",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicStorageServer).MoveFromAnotherService(ctx, req.(*PublicStorageMoveCopyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PublicStorage_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PublicStorageDeleteRequest)
 	if err := dec(in); err != nil {
@@ -231,6 +295,14 @@ var PublicStorage_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MoveToAnotherService",
 			Handler:    _PublicStorage_MoveToAnotherService_Handler,
+		},
+		{
+			MethodName: "CopyFromAnotherService",
+			Handler:    _PublicStorage_CopyFromAnotherService_Handler,
+		},
+		{
+			MethodName: "MoveFromAnotherService",
+			Handler:    _PublicStorage_MoveFromAnotherService_Handler,
 		},
 		{
 			MethodName: "Delete",

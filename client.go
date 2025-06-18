@@ -61,10 +61,16 @@ type PublicStorageMove struct {
 	WithWatermark bool
 }
 
-type PublicStorageMoveCopyToService struct {
+type PublicStorageMoveCopyToAnotherService struct {
 	File       string
 	ToPath     string
 	ToClientID string
+}
+
+type PublicStorageMoveCopyFromAnotherService struct {
+	File         string
+	ToPath       string
+	FromClientID string
 }
 
 func InitPublicStorageRPC() func() {
@@ -252,13 +258,13 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 	}
 }
 
-func MoveToAnotherService(form PublicStorageMoveCopyToService) (*storage.PublicStorageResponse, error) {
+func MoveToAnotherService(form PublicStorageMoveCopyToAnotherService) (*storage.PublicStorageResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
 	defer cancel()
 
 	res, err := PublicStorageRPCClient.MoveToAnotherService(ctx, &storage.PublicStorageMoveCopyRequest{
 		File:       form.File,
-		ToClientID: form.ToClientID,
+		ClientID:   form.ToClientID,
 		ToPath:     form.ToPath,
 		Credential: &PublicStorageRPCCredential,
 	})
@@ -269,18 +275,52 @@ func MoveToAnotherService(form PublicStorageMoveCopyToService) (*storage.PublicS
 	return res, nil
 }
 
-func CopyToAnotherService(form PublicStorageMoveCopyToService) (*storage.PublicStorageResponse, error) {
+func CopyToAnotherService(form PublicStorageMoveCopyToAnotherService) (*storage.PublicStorageResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
 	defer cancel()
 
 	res, err := PublicStorageRPCClient.CopyToAnotherService(ctx, &storage.PublicStorageMoveCopyRequest{
 		File:       form.File,
-		ToClientID: form.ToClientID,
+		ClientID:   form.ToClientID,
 		ToPath:     form.ToPath,
 		Credential: &PublicStorageRPCCredential,
 	})
 	if err != nil {
 		log.Panicf("Copy file to another service invalid: %v", err)
+	}
+
+	return res, nil
+}
+
+func MoveFromAnotherService(form PublicStorageMoveCopyFromAnotherService) (*storage.PublicStorageResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
+	defer cancel()
+
+	res, err := PublicStorageRPCClient.MoveFromAnotherService(ctx, &storage.PublicStorageMoveCopyRequest{
+		File:       form.File,
+		ClientID:   form.FromClientID,
+		ToPath:     form.ToPath,
+		Credential: &PublicStorageRPCCredential,
+	})
+	if err != nil {
+		log.Panicf("move file from another service invalid: %v", err)
+	}
+
+	return res, nil
+}
+
+func CopyFromAnotherService(form PublicStorageMoveCopyFromAnotherService) (*storage.PublicStorageResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
+	defer cancel()
+
+	res, err := PublicStorageRPCClient.CopyFromAnotherService(ctx, &storage.PublicStorageMoveCopyRequest{
+		File:       form.File,
+		ClientID:   form.FromClientID,
+		ToPath:     form.ToPath,
+		Credential: &PublicStorageRPCCredential,
+	})
+	if err != nil {
+		log.Panicf("Copy file from another service invalid: %v", err)
 	}
 
 	return res, nil
