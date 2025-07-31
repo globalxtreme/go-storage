@@ -29,11 +29,14 @@ message PublicStorageStoreRequest {
   string originalName = 6;
   string ownerId = 7;
   string ownerType = 8;
-  string createdBy = 9;
-  string createdByName = 10;
-  google.protobuf.Duration savedUntil = 11;
-  bool WithWatermark = 12;
-  PublicStorageCredential credential = 13;
+  string reference = 9;
+  string referenceType = 10;
+  string createdBy = 11;
+  string createdByName = 12;
+  google.protobuf.Duration savedUntil = 13;
+  bool withWatermark = 14;
+  bool external = 15;
+  PublicStorageCredential credential = 16;
 }
 
 message PublicStorageDeleteRequest {

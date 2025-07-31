@@ -41,10 +41,13 @@ type PublicStorageUpload struct {
 	MimeType      *string
 	OwnerId       string
 	OwnerType     string
+	Reference     string
+	ReferenceType string
 	CreatedBy     string
 	CreatedByName string
 	SavedUntil    time.Duration
 	WithWatermark bool
+	External      bool
 }
 
 type PublicStorageMove struct {
@@ -55,10 +58,13 @@ type PublicStorageMove struct {
 	MimeType      *string
 	OwnerId       string
 	OwnerType     string
+	Reference     string
+	ReferenceType string
 	CreatedBy     string
 	CreatedByName string
 	SavedUntil    time.Duration
 	WithWatermark bool
+	External      bool
 }
 
 type PublicStorageMoveCopyToAnotherService struct {
@@ -186,9 +192,12 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 			OwnerId:       store.OwnerId,
 			OwnerType:     store.OwnerType,
 			CreatedBy:     store.CreatedBy,
+			Reference:     store.Reference,
+			ReferenceType: store.ReferenceType,
 			CreatedByName: store.CreatedByName,
 			Credential:    &PublicStorageRPCCredential,
 			WithWatermark: store.WithWatermark,
+			External:      store.External,
 		}
 
 		if store.SavedUntil > 0 {
@@ -242,10 +251,13 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 			MimeType:      mimeType,
 			OwnerId:       store.OwnerId,
 			OwnerType:     store.OwnerType,
+			Reference:     store.Reference,
+			ReferenceType: store.ReferenceType,
 			CreatedBy:     store.CreatedBy,
 			CreatedByName: store.CreatedByName,
 			Credential:    &PublicStorageRPCCredential,
 			WithWatermark: store.WithWatermark,
+			External:      store.External,
 		}
 
 		if store.SavedUntil > 0 {
