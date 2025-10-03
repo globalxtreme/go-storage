@@ -27,6 +27,7 @@ type PublicStorageClient interface {
 	MoveToAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
 	CopyFromAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
 	MoveFromAnotherService(ctx context.Context, in *PublicStorageMoveCopyRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
+	GenerateZIP(ctx context.Context, in *PublicStorageGenerateZIPRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
 	Delete(ctx context.Context, in *PublicStorageDeleteRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error)
 }
 
@@ -108,6 +109,15 @@ func (c *publicStorageClient) MoveFromAnotherService(ctx context.Context, in *Pu
 	return out, nil
 }
 
+func (c *publicStorageClient) GenerateZIP(ctx context.Context, in *PublicStorageGenerateZIPRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error) {
+	out := new(PublicStorageResponse)
+	err := c.cc.Invoke(ctx, "/storage.PublicStorage/GenerateZIP", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *publicStorageClient) Delete(ctx context.Context, in *PublicStorageDeleteRequest, opts ...grpc.CallOption) (*PublicStorageResponse, error) {
 	out := new(PublicStorageResponse)
 	err := c.cc.Invoke(ctx, "/storage.PublicStorage/Delete", in, out, opts...)
@@ -126,6 +136,7 @@ type PublicStorageServer interface {
 	MoveToAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error)
 	CopyFromAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error)
 	MoveFromAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error)
+	GenerateZIP(context.Context, *PublicStorageGenerateZIPRequest) (*PublicStorageResponse, error)
 	Delete(context.Context, *PublicStorageDeleteRequest) (*PublicStorageResponse, error)
 	mustEmbedUnimplementedPublicStorageServer()
 }
@@ -148,6 +159,9 @@ func (UnimplementedPublicStorageServer) CopyFromAnotherService(context.Context, 
 }
 func (UnimplementedPublicStorageServer) MoveFromAnotherService(context.Context, *PublicStorageMoveCopyRequest) (*PublicStorageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MoveFromAnotherService not implemented")
+}
+func (UnimplementedPublicStorageServer) GenerateZIP(context.Context, *PublicStorageGenerateZIPRequest) (*PublicStorageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateZIP not implemented")
 }
 func (UnimplementedPublicStorageServer) Delete(context.Context, *PublicStorageDeleteRequest) (*PublicStorageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -263,6 +277,24 @@ func _PublicStorage_MoveFromAnotherService_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PublicStorage_GenerateZIP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PublicStorageGenerateZIPRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PublicStorageServer).GenerateZIP(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/storage.PublicStorage/GenerateZIP",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PublicStorageServer).GenerateZIP(ctx, req.(*PublicStorageGenerateZIPRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PublicStorage_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PublicStorageDeleteRequest)
 	if err := dec(in); err != nil {
@@ -303,6 +335,10 @@ var PublicStorage_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MoveFromAnotherService",
 			Handler:    _PublicStorage_MoveFromAnotherService_Handler,
+		},
+		{
+			MethodName: "GenerateZIP",
+			Handler:    _PublicStorage_GenerateZIP_Handler,
 		},
 		{
 			MethodName: "Delete",

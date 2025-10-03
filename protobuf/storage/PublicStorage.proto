@@ -12,6 +12,7 @@ service PublicStorage {
   rpc MoveToAnotherService(PublicStorageMoveCopyRequest) returns (PublicStorageResponse) {}
   rpc CopyFromAnotherService(PublicStorageMoveCopyRequest) returns (PublicStorageResponse) {}
   rpc MoveFromAnotherService(PublicStorageMoveCopyRequest) returns (PublicStorageResponse) {}
+  rpc GenerateZIP(PublicStorageGenerateZIPRequest) returns (PublicStorageResponse) {}
   rpc Delete(PublicStorageDeleteRequest) returns (PublicStorageResponse) {}
 }
 
@@ -37,6 +38,27 @@ message PublicStorageStoreRequest {
   bool withWatermark = 14;
   bool external = 15;
   PublicStorageCredential credential = 16;
+}
+
+message PublicStorageGenerateZIPRequest {
+  string path = 1;
+  string filename = 2;
+  string title = 3;
+  string ownerId = 4;
+  string ownerType = 5;
+  string reference = 6;
+  string referenceType = 7;
+  string createdBy = 8;
+  string createdByName = 9;
+  google.protobuf.Duration savedUntil = 10;
+  bool external = 11;
+  repeated PublicStorageGenerateZIPFileRequest files = 12;
+  PublicStorageCredential credential = 13;
+}
+
+message PublicStorageGenerateZIPFileRequest {
+  string link = 1;
+  string filename = 2;
 }
 
 message PublicStorageDeleteRequest {

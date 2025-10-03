@@ -3,6 +3,7 @@ package gxstorage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/globalxtreme/go-storage/v2/grpc/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -79,6 +80,26 @@ type PublicStorageMoveCopyFromAnotherService struct {
 	FromClientID string
 }
 
+type PublicStorageGenerateZip struct {
+	Path          string
+	Filename      string
+	Title         string
+	OwnerId       string
+	OwnerType     string
+	Reference     string
+	ReferenceType string
+	CreatedBy     string
+	CreatedByName string
+	SavedUntil    time.Duration
+	External      bool
+	Files         []PublicStorageGenerateZipFile
+}
+
+type PublicStorageGenerateZipFile struct {
+	Filename string
+	Link     string
+}
+
 func InitPublicStorageRPC() func() {
 	clientId := os.Getenv("PUBLIC_STORAGE_CLIENT_ID")
 	clientSecret := os.Getenv("PUBLIC_STORAGE_CLIENT_SECRET")
@@ -150,6 +171,8 @@ func InitPublicStorageRPC() func() {
 
 	return cleanup
 }
+
+/** --- MAIN FUNCTIONS --- */
 
 func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, error) {
 	if len(store.Name) == 0 {
@@ -352,6 +375,48 @@ func Delete(path string) (*storage.PublicStorageResponse, error) {
 
 	return res, nil
 }
+
+func GenerateZIP(form PublicStorageGenerateZip) (*storage.PublicStorageResponse, error) {
+	if len(form.Files) == 0 {
+		return nil, fmt.Errorf("No files to generate zip")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), PublicStorageRPCConf.Timeout)
+	defer cancel()
+
+	request := storage.PublicStorageGenerateZIPRequest{
+		Path:          form.Path,
+		Filename:      form.Filename,
+		Title:         form.Title,
+		OwnerId:       form.OwnerId,
+		OwnerType:     form.OwnerType,
+		Reference:     form.Reference,
+		ReferenceType: form.ReferenceType,
+		CreatedBy:     form.CreatedBy,
+		CreatedByName: form.CreatedByName,
+		External:      form.External,
+	}
+
+	if form.SavedUntil > 0 {
+		request.SavedUntil = durationpb.New(form.SavedUntil)
+	}
+
+	for _, file := range form.Files {
+		request.Files = append(request.Files, &storage.PublicStorageGenerateZIPFileRequest{
+			Filename: file.Filename,
+			Link:     file.Link,
+		})
+	}
+
+	res, err := PublicStorageRPCClient.GenerateZIP(ctx, &request)
+	if err != nil {
+		log.Panicf("Generate file zip is failed: %v", err)
+	}
+
+	return res, nil
+}
+
+/** --- SUPPORT FUNCTIONS --- */
 
 func GetMimeType(file multipart.File, handler *multipart.FileHeader, mimeType *string) string {
 	if mimeType == nil || *mimeType == "" {
