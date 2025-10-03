@@ -395,6 +395,7 @@ func GenerateZIP(form PublicStorageGenerateZip) (*storage.PublicStorageResponse,
 		CreatedBy:     form.CreatedBy,
 		CreatedByName: form.CreatedByName,
 		External:      form.External,
+		Credential:    &PublicStorageRPCCredential,
 	}
 
 	if form.SavedUntil > 0 {
