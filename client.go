@@ -224,7 +224,7 @@ func UploadFile(store PublicStorageUpload) (*storage.PublicStorageResponse, erro
 		}
 
 		if store.SavedUntil > 0 {
-			req.SavedUntil = durationpb.New(store.SavedUntil)
+			req.SavedUntil = durationpb.New(24 * time.Hour * store.SavedUntil)
 		}
 
 		if err := stream.Send(&req); err != nil {
@@ -284,7 +284,7 @@ func MoveFile(store PublicStorageMove) (*storage.PublicStorageResponse, error) {
 		}
 
 		if store.SavedUntil > 0 {
-			req.SavedUntil = durationpb.New(store.SavedUntil)
+			req.SavedUntil = durationpb.New(24 * time.Hour * store.SavedUntil)
 		}
 
 		if err := stream.Send(&req); err != nil {
